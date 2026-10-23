@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operations Control Center — Demo</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --paper:#f4f6f6; --panel:#ffffff; --ink:#1a1f24; --muted:#4c5660; --dim:#5c6670;
+    --line:#dde3e5; --accent:#0b5c6b; --accent-soft:#0b5c6b17; --plan:#7f8b96;
+    --bad:#a12a3c; --bad-bg:#a12a3c14;
+    --warn:#7a5200; --warn-bg:#b5841f1f; --warn-fill:#9a6a00;
+    --ok:#0a6b47; --ok-bg:#0a6b4717;
+    --shadow:0 1px 2px rgba(20,30,35,.05),0 4px 16px rgba(20,30,35,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:var(--paper);color:var(--ink);
+    line-height:1.45;font-size:14px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1220px;margin:0 auto;padding:28px 24px 56px}
+  a{color:var(--accent)}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  header.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;
+    border-bottom:2px solid var(--accent);padding-bottom:16px;margin-bottom:4px}
+  .brand h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .brand .sub{color:var(--muted);font-size:13px;margin-top:3px;max-width:66ch}
+  .demo-badge{display:inline-block;background:var(--warn-bg);color:var(--warn);font-size:11px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:4px;border:1px solid var(--warn);margin-top:9px}
+  .by{text-align:right;font-size:12px;color:var(--muted)}
+  .by a{text-decoration:none}
+  .by a:hover{text-decoration:underline}
+
+  .note{background:var(--accent-soft);border:1px solid var(--line);border-left:3px solid var(--accent);
+    padding:9px 13px;border-radius:5px;font-size:12.5px;color:var(--muted);margin:16px 0 18px}
+  .note p+p{margin-top:4px}
+
+  /* Filters */
+  .filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;box-shadow:var(--shadow);padding:12px 16px;margin-bottom:18px}
+  .filters h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);width:100%}
+  .f{display:flex;flex-direction:column;gap:3px}
+  .f label,.controls label{font-size:12px;color:var(--muted);font-weight:600}
+  select{font:inherit;font-size:13px;padding:5px 9px;border:1px solid #aab4ba;border-radius:6px;background:var(--paper);color:var(--ink)}
+  button.btn{font:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;
+    border:1px solid var(--accent);background:var(--panel);color:var(--accent)}
+  button.btn:hover{background:var(--accent-soft)}
+  .pill{margin-left:auto;font-size:12px;color:var(--muted);align-self:center}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:14px 16px;box-shadow:var(--shadow)}
+  .kpi .label{font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .kpi .value{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .kpi .value small{font-size:14px;font-weight:600;color:var(--muted)}
+  .sub-h .hint{font-size:11px;font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0;margin-left:6px}
+  .kpi .delta{font-size:12px;margin-top:3px;color:var(--muted)}
+  .kpi .delta.up{color:var(--ok)} .kpi .delta.down{color:var(--bad)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:22px}
+  .card h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);
+    padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .card h2 .hint{font-size:11px;font-weight:500;color:var(--dim);text-transform:none;letter-spacing:0}
+  .sub-h{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:14px 16px 6px;border-top:1px solid var(--line)}
+  .explain{padding:10px 16px 0;font-size:12.5px;color:var(--muted)}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px 0;align-items:center}
+
+  .chartbox{padding:12px 16px 4px;overflow-x:auto}
+  .chartbox svg{width:100%;min-width:560px;height:auto;display:block}
+  .chartbox text{font-family:inherit;font-size:11px;fill:var(--dim)}
+  .chartbox .grid line{stroke:var(--line)}
+  .b-short{fill:var(--bad)} .b-bal{fill:var(--ok)} .b-sur{fill:var(--warn-fill)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);padding:4px 16px 12px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .legend i.line{height:3px;vertical-align:3px;width:16px}
+  .legend i.dash{height:0;border-top:3px dashed var(--plan);width:16px;vertical-align:3px;border-radius:0}
+
+  details.tbl{padding:0 16px 12px;font-size:12.5px}
+  details.tbl summary{cursor:pointer;color:var(--accent);font-weight:600;padding:2px 0}
+  .tbl-scroll{overflow-x:auto}
+  .tbl-scroll table{min-width:640px}
+  table{width:100%;border-collapse:collapse;font-size:12.8px}
+  th,td{text-align:left;padding:8px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);font-weight:700;background:var(--panel)}
+  th[scope=row]{font-size:12.8px;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600}
+  tfoot th[scope=row]{background:var(--paper);font-weight:700}
+  th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+  th button{font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+  th button:hover{color:var(--accent)}
+  th .arrow{font-size:10px;margin-left:3px}
+  tfoot td{font-weight:700;border-top:2px solid var(--line);background:var(--paper)}
+  details.tbl th,details.tbl td{padding:5px 8px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;white-space:nowrap}
+  .tag.short,.tag.behind{background:var(--bad-bg);color:var(--bad)}
+  .tag.bal,.tag.ontrack,.tag.ahead{background:var(--ok-bg);color:var(--ok)}
+  .tag.sur,.tag.above{background:var(--warn-bg);color:var(--warn)}
+  .tag.na{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+  .neg{color:var(--bad)} .pos{color:var(--ok)}
+  .empty{padding:14px 16px;color:var(--muted)}
+
+  .how{padding:12px 16px 16px;font-size:13px}
+  .how ul{margin:6px 0 0 18px}
+  .how li{margin:3px 0}
+
+  footer{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--dim);text-align:center}
+  footer a{text-decoration:none}
+  @media (max-width:560px){.by{text-align:left}.wrap{padding:20px 14px 40px}th,td{padding:7px 10px}.pill{margin-left:0;width:100%}.kpi .value{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>Operations Control Center</h1>
+      <p class="sub">A planning and tracking view for an operations team. It answers three questions in one place: do we have enough people, how are we doing against plan, and what is automation taking off the team.</p>
+      <span class="demo-badge">Demo · synthetic data</span>
+    </div>
+    <div class="by">
+      Built by <b>Jithin J</b><br>
+      <a href="https://github.com/jithinjolly2000-maker" target="_blank" rel="noopener">github.com/jithinjolly2000-maker</a><br>
+      <a href="https://www.linkedin.com/in/jithin2k" target="_blank" rel="noopener">linkedin.com/in/jithin2k</a>
+    </div>
+  </header>
+
+  <div class="note" role="note">
+    <p><b>Portfolio demonstration — synthetic data. Nothing here comes from any employer or real system.</b></p>
+    <p>Teams, queues, agents and every number are generated in your browser from a fixed seed, so each visit shows the same figures. Money is shown in generic currency units (CU). Actuals run to week 18 of a 26-week plan; later weeks show plan only.</p>
+  </div>
+
+  <section class="filters" aria-labelledby="fH">
+    <h2 id="fH">Filters</h2>
+    <div class="f"><label for="fTeam">Team</label><select id="fTeam"></select></div>
+    <div class="f"><label for="fQueue">Queue / skill</label><select id="fQueue"></select></div>
+    <div class="f"><label for="fFrom">From week</label><select id="fFrom"></select></div>
+    <div class="f"><label for="fTo">To week</label><select id="fTo"></select></div>
+    <button type="button" class="btn" id="fReset">Reset filters</button>
+    <span class="pill" id="fSum" aria-live="polite"></span>
+  </section>
+
+  <section aria-labelledby="kH">
+    <h2 id="kH" class="sr-only">Summary for the current filters</h2>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <!-- (a) Capacity -->
+  <section class="card" aria-labelledby="aH">
+    <h2 id="aH">1 · Do we have enough people? <span class="hint">weekly capacity vs demand-plan workload</span></h2>
+    <p class="explain">Workload = demand plan × handling time, minus hours the planned automation takes off. Capacity = (trained staff + 50% of ramping staff) × 32 productive hours. A week is <b>Short</b> when capacity is more than 5% below workload and has a <b>Surplus</b> when it is more than 10% above.</p>
+    <div class="chartbox" tabindex="0" aria-label="Capacity chart, scrolls sideways on small screens"><svg id="c1" viewBox="0 0 760 270" role="img" aria-labelledby="c1t c1d"></svg></div>
+    <div class="legend" aria-hidden="true">
+      <span><i style="background:var(--bad)"></i>Workload, short</span>
+      <span><i style="background:var(--ok)"></i>Workload, balanced</span>
+      <span><i style="background:var(--warn-fill)"></i>Workload, surplus</span>
+      <span><i class="line" style="background:var(--ink)"></i>Capacity hours</span>
+    </div>
+    <details class="tbl"><summary>View weekly capacity data as a table</summary>
+      <div class="tbl-scroll" tabindex="0" aria-label="Weekly capacity table, scrollable"><table>
+        <thead><tr><th scope="col">Week</th><th scope="col" class="num">Trained</th><th scope="col" class="num">Ramping</th><th scope="col" class="num">Demand (tasks)</th><th scope="col" class="num">Workload h</th><th scope="col" class="num">Capacity h</th><th scope="col" class="num">Gap h</th><th scope="col" class="num">Gap %</th><th scope="col">Status</th></tr></thead>
+        <tbody id="wTbl"></tbody>
+      </table></div>
+    </details>
+    <h3 class="sub-h">Staffing &amp; capacity by team and queue <span class="sr-only">(select a column header to sort)</span></h3>
+    <div class="tbl-scroll" tabindex="0" aria-label="Staffing table, scrollable"><table id="sTbl">
+      <thead><tr>
+        <th scope="col" data-k="team"><button type="button">Team<span class="arrow"></span></button></th>
+        <th scope="col" data-k="queue"><button type="button">Queue / skill<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="tr"><button type="button">Trained<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="rp"><button type="button">Ramping<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="d"><button type="button">Avg demand / wk<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="work"><button type="button">Workload h<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="cap"><button type="button">Capacity h<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="pct"><button type="button">Gap %<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="sw"><button type="button">Short weeks<span class="arrow"></span></button></th>
+        <th scope="col" data-k="st"><button type="button">Status<span class="arrow"></span></button></th>
+      </tr></thead>
+      <tbody id="sBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- (b) Plan -->
+  <section class="card" aria-labelledby="bH">
+    <h2 id="bH">2 · How are we doing vs plan? <span class="hint">cumulative actuals against the period plan</span></h2>
+    <div class="controls">
+      <label for="mSel">Metric</label>
+      <select id="mSel">
+        <option value="t">Tasks automated</option>
+        <option value="h">Hours saved</option>
+        <option value="c">OPEX avoided (CU)</option>
+      </select>
+    </div>
+    <div class="chartbox" tabindex="0" aria-label="Plan chart, scrolls sideways on small screens"><svg id="c2" viewBox="0 0 760 260" role="img" aria-labelledby="c2t c2d"></svg></div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="line" style="background:var(--accent)"></i>Actual (cumulative)</span>
+      <span><i class="dash"></i>Plan (cumulative)</span>
+    </div>
+    <h3 class="sub-h">Variance to plan <span class="hint" id="vHint"></span></h3>
+    <div class="tbl-scroll" tabindex="0" aria-label="Variance table, scrollable"><table>
+      <thead><tr><th scope="col">Metric</th><th scope="col" class="num">Plan to date</th><th scope="col" class="num">Actual</th><th scope="col" class="num">Variance</th><th scope="col" class="num">Var %</th><th scope="col">Status</th><th scope="col" class="num">Plan, full range</th></tr></thead>
+      <tbody id="vBody"></tbody>
+    </table></div>
+  </section>
+
+  <!-- (c) Automation -->
+  <section class="card" aria-labelledby="cH">
+    <h2 id="cH">3 · What's our automation impact? <span class="hint">hours saved by agent, actual vs plan</span></h2>
+    <div class="chartbox" tabindex="0" aria-label="Agent chart, scrolls sideways on small screens"><svg id="c3" viewBox="0 0 760 280" role="img" aria-labelledby="c3t c3d"></svg></div>
+    <div class="legend" aria-hidden="true">
+      <span><i style="background:var(--accent)"></i>Actual hours saved</span>
+      <span><i style="background:#c3cbd1"></i>Planned hours saved</span>
+    </div>
+    <h3 class="sub-h">Automation agents <span class="sr-only">(select a column header to sort)</span></h3>
+    <div class="tbl-scroll" tabindex="0" aria-label="Agent table, scrollable"><table id="aTbl">
+      <thead><tr>
+        <th scope="col" data-k="n"><button type="button">Agent<span class="arrow"></span></button></th>
+        <th scope="col" data-k="queue"><button type="button">Queue<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="at"><button type="button">Tasks handled<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="vp"><button type="button">vs plan<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="h"><button type="button">Hours saved<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="c"><button type="button">Cost avoided<span class="arrow"></span></button></th>
+        <th scope="col" class="num" data-k="rate"><button type="button">Automation rate<span class="arrow"></span></button></th>
+        <th scope="col" data-k="st"><button type="button">Status<span class="arrow"></span></button></th>
+      </tr></thead>
+      <tbody id="aBody"></tbody>
+      <tfoot id="aFoot"></tfoot>
+    </table></div>
+  </section>
+
+  <section class="card" aria-labelledby="hH">
+    <h2 id="hH">How it works</h2>
+    <div class="how">
+      <p>The dashboard combines four synthetic inputs into one view, so a manager can plan capacity, spot gaps and report impact without juggling separate spreadsheets:</p>
+      <ul>
+        <li><b>Team &amp; training data</b>: trained and ramping headcount per team and queue, week by week. New hires ramp for 6 weeks at half capacity.</li>
+        <li><b>Demand plan</b>: expected tasks per queue per week, with a mid-period peak.</li>
+        <li><b>Actuals</b>: completed task volumes for weeks 1–18, compared with the plan.</li>
+        <li><b>Automation results</b>: tasks each agent handled, converted to hours saved (minutes saved per task) and cost avoided (hours × 38 CU).</li>
+      </ul>
+      <p style="margin-top:6px">Every filter recalculates all three sections from the same records, so the numbers always agree with each other.</p>
+    </div>
+  </section>
+
+  <footer>
+    Static demo · vanilla HTML/CSS/JS · inline SVG charts · no dependencies ·
+    <a href="https://github.com/jithinjolly2000-maker/ops-control-center" target="_blank" rel="noopener">source</a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Seeded random (mulberry32) so every visit shows the same data ----
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  var rnd=mulberry32(20260518);
+
+  var WEEKS=26, NOW=18, HRS=32, RAMP=6, RAMP_EFF=0.5, RATE=38;
+  var TEAMS=["Team North","Team South","Team West"], TSCALE=[1,0.82,1.12];
+  var QUEUES=[
+    {n:"Intake",aht:0.10,base:2400},
+    {n:"Document review",aht:0.22,base:1400},
+    {n:"Disputes",aht:0.40,base:700},
+    {n:"Reconciliation",aht:0.28,base:900},
+    {n:"Escalations",aht:0.65,base:300}
+  ];
+  // q = queue index, live = go-live week in plan, share = planned share of queue volume,
+  // perf = actual vs planned share, delay = weeks late vs plan, min = minutes saved per task
+  var AGENTS=[
+    {n:"Intake Classifier",q:0,live:1,share:0.36,perf:1.06,delay:0,min:4},
+    {n:"Form Pre-fill Assistant",q:0,live:6,share:0.14,perf:0.90,delay:0,min:3},
+    {n:"Document Checker",q:1,live:2,share:0.30,perf:1.03,delay:0,min:9},
+    {n:"Status Notifier",q:1,live:4,share:0.10,perf:1.15,delay:0,min:5},
+    {n:"Dispute Triage Agent",q:2,live:5,share:0.24,perf:0.86,delay:3,min:12},
+    {n:"Reconciliation Matcher",q:3,live:3,share:0.34,perf:1.09,delay:0,min:11},
+    {n:"Escalation Router",q:4,live:8,share:0.18,perf:0.95,delay:1,min:15}
+  ];
+  function season(w){ return 1+0.16*Math.sin((w-3)/WEEKS*2*Math.PI)+(w>=10&&w<=14?0.07:0); }
+  function zeros(){ var a=[]; for(var i=0;i<WEEKS;i++) a.push(0); return a; }
+  function ramp(w,start,share){ return w<start?0:share*Math.min(1,(w-start+1)/4); }
+
+  // ---- Generate cells: one per team x queue ----
+  var cells=[];
+  TEAMS.forEach(function(tn,t){ cells[t]=[]; QUEUES.forEach(function(Q,q){
+    var c={dp:zeros(),av:zeros(),pah:zeros(),tr:zeros(),rp:zeros()};
+    for(var w=1;w<=WEEKS;w++){
+      c.dp[w-1]=Math.round(Q.base*TSCALE[t]*season(w)*(0.95+0.1*rnd()));
+      c.av[w-1]=w<=NOW?Math.round(c.dp[w-1]*(0.9+0.22*rnd())):0;
+    }
+    cells[t][q]=c;
+  }); });
+
+  // ---- Agents: planned and actual tasks per team per week ----
+  AGENTS.forEach(function(A){
+    A.pt=[]; A.at=[];
+    TEAMS.forEach(function(tn,t){
+      var c=cells[t][A.q], pt=zeros(), at=zeros();
+      for(var w=1;w<=WEEKS;w++){
+        pt[w-1]=Math.round(c.dp[w-1]*ramp(w,A.live,A.share));
+        if(w<=NOW) at[w-1]=Math.round(c.av[w-1]*ramp(w,A.live+A.delay,A.share*A.perf)*(0.95+0.1*rnd()));
+        c.pah[w-1]+=pt[w-1]*A.min/60;
+      }
+      A.pt[t]=pt; A.at[t]=at;
+    });
+  });
+
+  // ---- Staffing: start near average need, hire for the peak (often late), some attrition ----
+  cells.forEach(function(row){ row.forEach(function(c,q){
+    var need=[], sum=0, peak=0;
+    for(var i=0;i<WEEKS;i++){ var n=(c.dp[i]*QUEUES[q].aht-c.pah[i])/HRS; need.push(n); sum+=n; peak=Math.max(peak,n); }
+    var early=0; for(var e=0;e<6;e++) early+=need[e];
+    var tr0=Math.max(2,Math.round(early/6*(0.84+0.08*rnd())));
+    var hires=Math.max(0,Math.round(peak-tr0-0.4+rnd()*1.4)), hireW=6+Math.floor(rnd()*8);
+    var leaveW=rnd()<0.45?8+Math.floor(rnd()*14):99;
+    for(var w=1;w<=WEEKS;w++){
+      var tr=tr0, rp=0;
+      if(w>=hireW&&w<hireW+RAMP) rp=hires; else if(w>=hireW+RAMP) tr+=hires;
+      if(w>=leaveW) tr-=1;
+      c.tr[w-1]=tr; c.rp[w-1]=rp;
+    }
+  }); });
+
+  // ---- Filters ----
+  var $=function(id){ return document.getElementById(id); };
+  var f={team:-1,queue:-1,from:1,to:WEEKS};
+  function opts(list,all){ return (all?'<option value="-1">'+all+'</option>':'')+list.map(function(x,i){ return '<option value="'+(all?i:i+1)+'">'+x+'</option>'; }).join(""); }
+  var wkNames=[]; for(var w=1;w<=WEEKS;w++) wkNames.push("Week "+w+(w>NOW?" (plan)":""));
+  $("fTeam").innerHTML=opts(TEAMS,"All teams");
+  $("fQueue").innerHTML=opts(QUEUES.map(function(Q){return Q.n;}),"All queues");
+  $("fFrom").innerHTML=opts(wkNames); $("fTo").innerHTML=opts(wkNames);
+  function syncControls(){ $("fTeam").value=f.team; $("fQueue").value=f.queue; $("fFrom").value=f.from; $("fTo").value=f.to; }
+  function inT(t){ return f.team<0||f.team===t; }
+  function inQ(q){ return f.queue<0||f.queue===q; }
+  function eachCell(fn){ cells.forEach(function(row,t){ if(!inT(t)) return; row.forEach(function(c,q){ if(inQ(q)) fn(t,q,c); }); }); }
+
+  // ---- Formatting ----
+  function fmt(n){ return Math.round(n).toLocaleString("en-GB"); }
+  function money(n){ return "CU "+fmt(n); }
+  function sgn(n,d){ var s=(n*100).toFixed(d===undefined?1:d); return (n>0?"+":"")+s+"%"; }
+  function sgnN(n){ return (n>0?"+":n<0?"\u2212":"")+fmt(Math.abs(n)); }
+  var GAP={short:"Short",bal:"Balanced",sur:"Surplus"};
+  function gapSt(p){ return p< -0.05?"short":p>0.10?"sur":"bal"; }
+  function tag(cls,txt){ return '<span class="tag '+cls+'">'+txt+'</span>'; }
+  function nice(v){ var e=Math.pow(10,Math.floor(Math.log10(Math.max(v,1)))), m=v/e; return (m<=1?1:m<=2?2:m<=5?5:10)*e; }
+
+  // ---- Aggregations ----
+  function weekly(){
+    var out=[];
+    for(var w=f.from;w<=f.to;w++){
+      var r={w:w,d:0,work:0,cap:0,tr:0,rp:0}, i=w-1;
+      eachCell(function(t,q,c){ r.d+=c.dp[i]; r.work+=c.dp[i]*QUEUES[q].aht-c.pah[i];
+        r.cap+=(c.tr[i]+RAMP_EFF*c.rp[i])*HRS; r.tr+=c.tr[i]; r.rp+=c.rp[i]; });
+      r.gap=r.cap-r.work; r.pct=r.work?r.gap/r.work:0; r.st=gapSt(r.pct); out.push(r);
+    }
+    return out;
+  }
+  function staffing(){
+    var rows=[], n=f.to-f.from+1;
+    eachCell(function(t,q,c){
+      var r={team:TEAMS[t],queue:QUEUES[q].n,tr:c.tr[f.to-1],rp:c.rp[f.to-1],d:0,work:0,cap:0,sw:0};
+      for(var w=f.from;w<=f.to;w++){ var i=w-1, wk=c.dp[i]*QUEUES[q].aht-c.pah[i], cp=(c.tr[i]+RAMP_EFF*c.rp[i])*HRS;
+        r.d+=c.dp[i]; r.work+=wk; r.cap+=cp; if(gapSt((cp-wk)/wk)==="short") r.sw++; }
+      r.d/=n; r.pct=(r.cap-r.work)/r.work; r.stc=gapSt(r.pct); r.st=GAP[r.stc]; rows.push(r);
+    });
+    return rows;
+  }
+  var aTo=function(){ return Math.min(f.to,NOW); };
+  function agentRows(){
+    var rows=[];
+    AGENTS.forEach(function(A){
+      if(!inQ(A.q)) return;
+      var r={n:A.n,queue:QUEUES[A.q].n,q:A.q,at:0,pt:0,ptFull:0,vol:0};
+      TEAMS.forEach(function(tn,t){ if(!inT(t)) return;
+        for(var w=f.from;w<=f.to;w++){ var i=w-1; r.ptFull+=A.pt[t][i];
+          if(w<=NOW){ r.at+=A.at[t][i]; r.pt+=A.pt[t][i]; r.vol+=cells[t][A.q].av[i]; } } });
+      r.h=r.at*A.min/60; r.ph=r.pt*A.min/60; r.phFull=r.ptFull*A.min/60;
+      r.c=r.h*RATE; r.rate=r.vol?r.at/r.vol:0;
+      r.vp=r.pt?r.at/r.pt-1:(r.at?1:0);
+      r.stc=!r.pt&&!r.at?"na":r.vp< -0.03?"behind":r.vp>0.03?"ahead":"ontrack";
+      r.st={na:"Not live yet",behind:"Behind plan",ahead:"Ahead of plan",ontrack:"On track"}[r.stc];
+      rows.push(r);
+    });
+    return rows;
+  }
+  function planTotals(ag){
+    var T={vp:0,va:0,vpFull:0,tp:0,ta:0,tpFull:0,hp:0,ha:0,hpFull:0};
+    eachCell(function(t,q,c){ for(var w=f.from;w<=f.to;w++){ var i=w-1; T.vpFull+=c.dp[i]; if(w<=NOW){ T.vp+=c.dp[i]; T.va+=c.av[i]; } } });
+    ag.forEach(function(r){ T.tp+=r.pt; T.ta+=r.at; T.tpFull+=r.ptFull; T.hp+=r.ph; T.ha+=r.h; T.hpFull+=r.phFull; });
+    return T;
+  }
+
+  // ---- Sortable tables (header buttons, aria-sort) ----
+  function Sorter(tblId,k,dir,draw){
+    var s={k:k,dir:dir}, ths=document.querySelectorAll("#"+tblId+" thead th[data-k]");
+    Array.prototype.forEach.call(ths,function(th){
+      th.querySelector("button").addEventListener("click",function(){
+        var key=th.getAttribute("data-k");
+        if(s.k===key) s.dir*=-1; else { s.k=key; s.dir=th.classList.contains("num")?-1:1; }
+        draw();
+      });
+    });
+    s.apply=function(rows){
+      Array.prototype.forEach.call(ths,function(th){
+        var on=th.getAttribute("data-k")===s.k;
+        if(on) th.setAttribute("aria-sort",s.dir>0?"ascending":"descending"); else th.removeAttribute("aria-sort");
+        th.querySelector(".arrow").textContent=on?(s.dir>0?"\u25b2":"\u25bc"):"";
+      });
+      return rows.slice().sort(function(a,b){ var x=a[s.k], y=b[s.k];
+        if(typeof x==="string") return x<y?-s.dir:x>y?s.dir:0; return (x-y)*s.dir; });
+    };
+    return s;
+  }
+
+  // ---- Chart 1: workload bars coloured by gap status + capacity line ----
+  function chart1(rows){
+    var W=760,H=270,L=56,R=14,T=14,B=34,iw=W-L-R,ih=H-T-B,n=rows.length;
+    var max=nice(Math.max.apply(null,rows.map(function(r){ return Math.max(r.work,r.cap); }))*1.05);
+    var bw=iw/n, y=function(v){ return T+ih-v/max*ih; }, cx=function(i){ return L+i*bw+bw/2; };
+    var short=rows.filter(function(r){ return r.st==="short"; });
+    var s='<title id="c1t">Weekly workload vs capacity hours, weeks '+f.from+' to '+f.to+'</title>'+
+      '<desc id="c1d">'+short.length+' of '+n+' weeks are short of capacity'+
+      (short.length?' (weeks '+short.map(function(r){return r.w;}).join(", ")+')':'')+
+      '. Full weekly figures are in the data table below the chart.</desc><g class="grid">';
+    for(var g=0;g<=4;g++){ var v=max*g/4; s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/>'+
+      '<text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fmt(v)+'</text>'; }
+    s+='</g><text x="12" y="'+(T+ih/2)+'" transform="rotate(-90 12 '+(T+ih/2)+')" text-anchor="middle">Hours / week</text>';
+    var step=n>14?2:1;
+    rows.forEach(function(r,i){
+      var x=L+i*bw+bw*0.16, h=Math.max(0,y(0)-y(r.work));
+      s+='<rect class="b-'+r.st+'" x="'+x.toFixed(1)+'" y="'+y(r.work).toFixed(1)+'" width="'+(bw*0.68).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="2">'+
+        '<title>Week '+r.w+': workload '+fmt(r.work)+' h, capacity '+fmt(r.cap)+' h, gap '+sgn(r.pct)+' ('+GAP[r.st]+')</title></rect>';
+      if(i%step===0) s+='<text x="'+cx(i).toFixed(1)+'" y="'+(H-B+16)+'" text-anchor="middle">W'+r.w+'</text>';
+    });
+    s+='<path d="'+rows.map(function(r,i){ return (i?"L":"M")+cx(i).toFixed(1)+" "+y(r.cap).toFixed(1); }).join(" ")+
+      '" fill="none" stroke="var(--ink)" stroke-width="2.2"/>';
+    rows.forEach(function(r,i){ s+='<circle cx="'+cx(i).toFixed(1)+'" cy="'+y(r.cap).toFixed(1)+'" r="3" fill="var(--ink)"/>'; });
+    $("c1").innerHTML=s;
+  }
+
+  // ---- Chart 2: cumulative actual vs plan ----
+  var METRIC={t:{n:"tasks automated",f:fmt},h:{n:"hours saved",f:fmt},c:{n:"OPEX avoided",f:money}};
+  function series(m){
+    var plan=[], act=[], cp=0, ca=0;
+    for(var w=f.from;w<=f.to;w++){
+      var p=0,a=0,i=w-1;
+      AGENTS.forEach(function(A){ if(!inQ(A.q)) return; TEAMS.forEach(function(tn,t){ if(!inT(t)) return;
+        var k=m==="t"?1:A.min/60*(m==="c"?RATE:1); p+=A.pt[t][i]*k; a+=A.at[t][i]*k; }); });
+      cp+=p; plan.push(cp); if(w<=NOW){ ca+=a; act.push(ca); }
+    }
+    return {plan:plan,act:act};
+  }
+  function chart2(){
+    var m=$("mSel").value, S=series(m), M=METRIC[m];
+    var W=760,H=260,L=76,R=18,T=14,B=34,iw=W-L-R,ih=H-T-B,n=S.plan.length;
+    var max=nice(Math.max(S.plan[n-1]||0,S.act[S.act.length-1]||0,1)*1.05);
+    var x=function(i){ return L+(n>1?i*iw/(n-1):iw/2); }, y=function(v){ return T+ih-v/max*ih; };
+    var la=S.act.length, desc=la?'Through week '+(f.from+la-1)+', actual '+M.f(S.act[la-1])+' vs plan '+M.f(S.plan[la-1])+
+      ' ('+sgn(S.plan[la-1]?S.act[la-1]/S.plan[la-1]-1:0)+').':'No actuals yet in the selected weeks.';
+    desc+=' Plan for the full range: '+M.f(S.plan[n-1]||0)+'.';
+    var s='<title id="c2t">Cumulative '+M.n+', actual vs plan, weeks '+f.from+' to '+f.to+'</title><desc id="c2d">'+desc+'</desc><g class="grid">';
+    for(var g=0;g<=4;g++){ var v=max*g/4; s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/>'+
+      '<text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fmt(v)+'</text>'; }
+    s+='</g>';
+    var step=n>14?2:1;
+    for(var i=0;i<n;i++) if(i%step===0) s+='<text x="'+x(i).toFixed(1)+'" y="'+(H-B+16)+'" text-anchor="middle">W'+(f.from+i)+'</text>';
+    if(f.to>NOW&&f.from<=NOW){ var nx=x(NOW-f.from); s+='<line x1="'+nx+'" x2="'+nx+'" y1="'+T+'" y2="'+(T+ih)+'" stroke="var(--muted)" stroke-dasharray="2 3"/>'+
+      '<text x="'+(nx+5)+'" y="'+(T+10)+'">Actuals to W'+NOW+'</text>'; }
+    function line(arr){ return arr.map(function(v,i){ return (i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1); }).join(" "); }
+    s+='<path d="'+line(S.plan)+'" fill="none" stroke="var(--plan)" stroke-width="2" stroke-dasharray="6 4"/>';
+    if(la){ s+='<path d="'+line(S.act)+'" fill="none" stroke="var(--accent)" stroke-width="2.6"/>';
+      S.act.forEach(function(v,i){ s+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="2.6" fill="var(--accent)"><title>Week '+(f.from+i)+': actual '+M.f(v)+', plan '+M.f(S.plan[i])+'</title></circle>'; }); }
+    else s+='<text x="'+(L+iw/2)+'" y="'+(T+ih/2)+'" text-anchor="middle">No actuals yet in this range (plan only)</text>';
+    $("c2").innerHTML=s;
+  }
+
+  // ---- Chart 3: hours saved per agent ----
+  function chart3(rows){
+    var W=760,L=190,R=96,T=8,rh=36,H=T*2+Math.max(1,rows.length)*rh;
+    var max=nice(Math.max.apply(null,rows.map(function(r){ return Math.max(r.h,r.ph); }).concat([1])));
+    var sc=function(v){ return v/max*(W-L-R); };
+    var tot=rows.reduce(function(a,r){ return a+r.h; },0);
+    var s='<title id="c3t">Hours saved by automation agent, actual vs plan</title><desc id="c3d">'+rows.length+' agents saved '+fmt(tot)+
+      ' hours in the selected range. '+rows.map(function(r){ return r.n+': '+fmt(r.h)+' h'; }).join("; ")+'.</desc>';
+    rows.forEach(function(r,i){
+      var y0=T+i*rh;
+      s+='<text x="'+(L-8)+'" y="'+(y0+20)+'" text-anchor="end" style="fill:var(--ink)">'+r.n+'</text>'+
+        '<rect x="'+L+'" y="'+(y0+4)+'" width="'+sc(r.ph).toFixed(1)+'" height="11" fill="#c3cbd1" rx="2"><title>'+r.n+' plan: '+fmt(r.ph)+' h</title></rect>'+
+        '<rect x="'+L+'" y="'+(y0+16)+'" width="'+sc(r.h).toFixed(1)+'" height="13" fill="var(--accent)" rx="2"><title>'+r.n+' actual: '+fmt(r.h)+' h</title></rect>'+
+        '<text x="'+(L+sc(Math.max(r.h,r.ph))+6).toFixed(1)+'" y="'+(y0+27)+'">'+fmt(r.h)+' h</text>';
+    });
+    if(!rows.length) s+='<text x="20" y="30">No agents for this filter</text>';
+    var svg=$("c3"); svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.innerHTML=s;
+  }
+
+  // ---- Tables ----
+  var sSort=Sorter("sTbl","pct",1,render), aSort=Sorter("aTbl","h",-1,render);
+  function pctCell(p){ return '<td class="num '+(p<0?"neg":"pos")+'">'+sgn(p)+'</td>'; }
+  function drawWeekly(rows){
+    $("wTbl").innerHTML=rows.map(function(r){ return '<tr><td>Week '+r.w+(r.w>NOW?" (plan)":"")+'</td><td class="num">'+r.tr+'</td><td class="num">'+r.rp+
+      '</td><td class="num">'+fmt(r.d)+'</td><td class="num">'+fmt(r.work)+'</td><td class="num">'+fmt(r.cap)+'</td><td class="num">'+sgnN(r.gap)+'</td>'+
+      pctCell(r.pct)+'<td>'+tag(r.st,GAP[r.st])+'</td></tr>'; }).join("");
+  }
+  function drawStaff(){
+    $("sBody").innerHTML=sSort.apply(staffing()).map(function(r){ return '<tr><td>'+r.team+'</td><td>'+r.queue+'</td><td class="num">'+r.tr+
+      '</td><td class="num">'+r.rp+'</td><td class="num">'+fmt(r.d)+'</td><td class="num">'+fmt(r.work)+'</td><td class="num">'+fmt(r.cap)+'</td>'+
+      pctCell(r.pct)+'<td class="num">'+r.sw+'</td><td>'+tag(r.stc,r.st)+'</td></tr>'; }).join("");
+  }
+  function drawVariance(T){
+    var has=f.from<=NOW;
+    $("vHint").textContent=has?"actuals for weeks "+f.from+"–"+aTo():"";
+    if(!has){ $("vBody").innerHTML='<tr><td colspan="7" class="empty">No actuals yet: the selected weeks are all after week '+NOW+'. Plan only.</td></tr>'; return; }
+    function row(name,p,a,full,fm,isVol){
+      var v=a-p, vp=p?v/p:0, st=isVol?(vp>0.03?["above","Above plan"]:vp< -0.03?["na","Below plan"]:["bal","In line"])
+        :(vp< -0.03?["behind","Behind plan"]:vp>0.03?["ahead","Ahead of plan"]:["ontrack","On track"]);
+      return '<tr><th scope="row">'+name+'</th><td class="num">'+fm(p)+'</td><td class="num">'+fm(a)+'</td><td class="num">'+
+        (fm===money?"CU "+sgnN(v):sgnN(v))+'</td>'+pctCell(vp)+'<td>'+tag(st[0],st[1])+'</td><td class="num">'+fm(full)+'</td></tr>';
+    }
+    $("vBody").innerHTML=row("Task volume (vs demand plan)",T.vp,T.va,T.vpFull,fmt,true)+row("Tasks automated",T.tp,T.ta,T.tpFull,fmt)+
+      row("Hours saved",T.hp,T.ha,T.hpFull,fmt)+row("OPEX avoided",T.hp*RATE,T.ha*RATE,T.hpFull*RATE,money);
+  }
+  function drawAgents(rows){
+    $("aBody").innerHTML=aSort.apply(rows).map(function(r){ return '<tr><th scope="row">'+r.n+'</th><td>'+r.queue+'</td><td class="num">'+fmt(r.at)+'</td>'+
+      (r.stc==="na"?'<td class="num">—</td>':pctCell(r.vp))+'<td class="num">'+fmt(r.h)+'</td><td class="num">'+money(r.c)+'</td><td class="num">'+(r.rate*100).toFixed(1)+'%</td><td>'+tag(r.stc,r.st)+'</td></tr>'; }).join("");
+    var at=0,pt=0,h=0,c=0,vol=0,qs={};
+    rows.forEach(function(r){ at+=r.at; pt+=r.pt; h+=r.h; c+=r.c; if(!qs[r.q]){ qs[r.q]=1; vol+=r.vol; } });
+    var vp=pt?at/pt-1:0;
+    $("aFoot").innerHTML='<tr><th scope="row">Total ('+rows.length+' agents)</th><td>'+Object.keys(qs).length+' queues</td><td class="num">'+fmt(at)+'</td>'+
+      pctCell(vp)+'<td class="num">'+fmt(h)+'</td><td class="num">'+money(c)+'</td><td class="num">'+(vol?(at/vol*100).toFixed(1):"0.0")+'%</td><td></td></tr>';
+    return {vol:vol,at:at,pt:pt};
+  }
+
+  // ---- KPIs ----
+  function drawKpis(wk,T,tot){
+    var last=wk[wk.length-1], short=wk.filter(function(r){ return r.st==="short"; });
+    var worst=wk.reduce(function(a,r){ return r.pct<a.pct?r:a; },wk[0]);
+    function d(a,p){ if(!p) return {t:"no actuals in range",c:""}; var v=a/p-1; return {t:sgn(v)+" vs plan to date",c:v< -0.03?"down":"up"}; }
+    var k=[
+      {l:"Headcount (week "+last.w+")",v:fmt(last.tr+last.rp),d:{t:last.tr+" trained · "+last.rp+" ramping",c:""}},
+      {l:"Weeks short of capacity",v:short.length+"<small> / "+wk.length+"</small>",d:{t:"worst: week "+worst.w+" at "+sgn(worst.pct,0),c:short.length?"down":"up"}},
+      {l:"Tasks automated",v:fmt(T.ta),d:d(T.ta,T.tp)},
+      {l:"Hours saved",v:fmt(T.ha),d:d(T.ha,T.hp)},
+      {l:"OPEX avoided",v:money(T.ha*RATE),d:d(T.ha,T.hp)},
+      {l:"Automation rate",v:(tot.vol?(tot.at/tot.vol*100).toFixed(1):"0.0")+"%",d:{t:"of actual task volume",c:""}}
+    ];
+    $("kpis").innerHTML=k.map(function(x){ return '<div class="kpi"><h3 class="label">'+x.l+'</h3><p class="value">'+x.v+'</p><p class="delta '+x.d.c+'">'+x.d.t+'</p></div>'; }).join("");
+  }
+
+  function render(){
+    var wk=weekly(), ag=agentRows(), T=planTotals(ag);
+    $("fSum").textContent="Showing "+(f.team<0?"all teams":TEAMS[f.team])+" · "+(f.queue<0?"all queues":QUEUES[f.queue].n)+" · weeks "+f.from+"–"+f.to;
+    chart1(wk); drawWeekly(wk); drawStaff(); chart2(); drawVariance(T); chart3(ag);
+    drawKpis(wk,T,drawAgents(ag));
+  }
+
+  // ---- Wire controls ----
+  $("fTeam").addEventListener("change",function(e){ f.team=+e.target.value; render(); });
+  $("fQueue").addEventListener("change",function(e){ f.queue=+e.target.value; render(); });
+  $("fFrom").addEventListener("change",function(e){ f.from=+e.target.value; if(f.to<f.from) f.to=f.from; syncControls(); render(); });
+  $("fTo").addEventListener("change",function(e){ f.to=+e.target.value; if(f.from>f.to) f.from=f.to; syncControls(); render(); });
+  $("fReset").addEventListener("click",function(){ f={team:-1,queue:-1,from:1,to:WEEKS}; syncControls(); render(); });
+  $("mSel").addEventListener("change",chart2);
+
+  syncControls(); render();
+})();
+</script>
+</body>
+</html>
